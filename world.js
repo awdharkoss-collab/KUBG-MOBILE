@@ -1,11 +1,8 @@
-import * as THREE from 'three';
-
-export class GameWorld {
+class GameWorld {
   constructor(scene, quality = 'high') {
     this.scene = scene;
     this.quality = quality;
     this.colliders = [];
-    this.doors = [];
     this.lootItems = [];
     this.vehicles = [];
     
@@ -38,13 +35,14 @@ export class GameWorld {
     this.sunLight.shadow.bias = -0.0005;
     this.scene.add(this.sunLight);
   }
+
   getTerrainHeight(x, z) {
     const dist = Math.sqrt(x * x + z * z);
     if (dist > 220) return -3.5;
     let h = Math.sin(x * 0.018) * Math.cos(z * 0.018) * 6.5;
     h += Math.sin(x * 0.045 + z * 0.03) * 2.2;
-    if (dist < 45) h *= 0.25; // Şehir merkezi düzlüğü
-    if (dist > 175) h -= (dist - 175) * 0.18; // Sahil eğimi
+    if (dist < 45) h *= 0.25;
+    if (dist > 175) h -= (dist - 175) * 0.18;
     return h;
   }
 
@@ -60,9 +58,9 @@ export class GameWorld {
       const y = this.getTerrainHeight(x, z);
       pos.setY(i, y);
 
-      if (y < 0.4) colors.push(0.76, 0.70, 0.50); // Kumsal
-      else if (y > 5.5) colors.push(0.38, 0.40, 0.36); // Kayalık
-      else colors.push(0.24, 0.36, 0.20); // Çimen/Orman
+      if (y < 0.4) colors.push(0.76, 0.70, 0.50);
+      else if (y > 5.5) colors.push(0.38, 0.40, 0.36);
+      else colors.push(0.24, 0.36, 0.20);
     }
     geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     geo.computeVertexNormals();
@@ -76,7 +74,6 @@ export class GameWorld {
     terrain.receiveShadow = true;
     this.scene.add(terrain);
 
-    // Deniz Suyu
     const waterGeo = new THREE.PlaneGeometry(1200, 1200);
     waterGeo.rotateX(-Math.PI / 2);
     const waterMat = new THREE.MeshStandardMaterial({
@@ -95,7 +92,6 @@ export class GameWorld {
     const militaryMat = new THREE.MeshStandardMaterial({ color: 0x4b5548, roughness: 0.8 });
     const roofMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.6, metalness: 0.3 });
 
-    // İçine girilebilir binalar (Şehir, Askeri Üs, Depolar)
     const locations = [
       { x: 0, z: 0, w: 14, d: 14, h: 5, mat: wallMat },
       { x: 24, z: -18, w: 12, d: 16, h: 5, mat: wallMat },
@@ -106,7 +102,6 @@ export class GameWorld {
 
     locations.forEach(b => this.createEnterableBuilding(b.x, b.z, b.w, b.d, b.h, b.mat, roofMat));
 
-    // Instanced Ağaçlar (Performanslı Orman)
     const treeCount = this.quality === 'low' ? 120 : 280;
     const trunkGeo = new THREE.CylinderGeometry(0.35, 0.5, 4, 6);
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3525, roughness: 0.9 });
@@ -154,7 +149,6 @@ export class GameWorld {
       this.colliders.push({ minX: x - bw / 2, maxX: x + bw / 2, minZ: z - bd / 2, maxZ: z + bd / 2, isBox: true });
     };
 
-    // Arka, Sol, Sağ duvarlar ve Kapı boşluklu Ön duvar
     addWall(cx, cz - d / 2, w, t);
     addWall(cx - w / 2, cz, t, d);
     addWall(cx + w / 2, cz, t, d);
@@ -162,7 +156,6 @@ export class GameWorld {
     addWall(cx - doorW / 2 - sideW / 2, cz + d / 2, sideW, t);
     addWall(cx + doorW / 2 + sideW / 2, cz + d / 2, sideW, t);
 
-    // Çatı
     const roof = new THREE.Mesh(new THREE.BoxGeometry(w + 0.8, 0.4, d + 0.8), roofMat);
     roof.position.set(cx, y + h + 0.2, cz);
     roof.castShadow = true;
@@ -170,7 +163,6 @@ export class GameWorld {
   }
 
   spawnVehiclesAndLoot() {
-    // Kullanılabilir 3D Arazi Aracı
     const carGroup = new THREE.Group();
     const body = new THREE.Mesh(
       new THREE.BoxGeometry(2.4, 1.1, 4.6),
@@ -190,15 +182,20 @@ export class GameWorld {
     this.scene.add(carGroup);
     this.vehicles.push({ mesh: carGroup, speed: 0, driver: null });
 
-    // Yerdeki Loot Kutuları (Mühimmat & İlk Yardım)
     const lootGeo = new THREE.BoxGeometry(0.8, 0.5, 0.8);
     const lootMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0x78350f, roughness: 0.3 });
-    const spots = [[2, 2], [24, -18], [-26, 20], [-65, -55], [15, -10]];
-    spots.forEach(([lx, lz]) => {
+    const spots = [
+      { x: 0, z: 0 },
+      { x: 24, z: -18 },
+      { x: -26, z: 20 },
+      { x: -65, z: -55 },
+      { x: 15, z: -10 }
+    ];
+    spots.forEach((pos) => {
       const box = new THREE.Mesh(lootGeo, lootMat);
-      box.position.set(lx, this.getTerrainHeight(lx, lz) + 0.35, lz);
+      box.position.set(pos.x, this.getTerrainHeight(pos.x, pos.z) + 0.35, pos.z);
       this.scene.add(box);
-      this.lootItems.push({ mesh: box, active: true, type: 'ammo_med' });
+      this.lootItems.push({ mesh: box, active: true });
     });
   }
 }
