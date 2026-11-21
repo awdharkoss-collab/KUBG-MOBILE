@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>SON HÜCRE: Battle Royale 3D TPS</title>
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com",
+        "three/addons/": "https://unpkg.com"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- 3D Oyun Tuvali -->
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- ANA MENÜ / LOBİ -->
+  <div id="lobbyScreen" class="overlay">
+    <div class="lobby-header">
+      <div class="player-card">
+        <div class="avatar">🇹🇷</div>
+        <div>
+          <div class="p-name">KOMUTAN_TR</div>
+          <div class="p-rank">Elmas II • Seviye 48</div>
+        </div>
+      </div>
+      <div class="lobby-stats">
+        <span>FPS: <b id="lobbyFps">60</b></span>
+        <select id="graphicsSelect">
+          <option value="low">Grafik: Düşük</option>
+          <option value="medium">Grafik: Orta</option>
+          <option value="high" selected>Grafik: Yüksek</option>
+          <option value="ultra">Grafik: Ultra (PBR+Gölge)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="lobby-center">
+      <h1 class="game-title">SON HÜCRE</h1>
+      <p class="game-sub">ULTRA 3D TPS BATTLE ROYALE</p>
+    </div>
+
+    <div class="lobby-footer">
+      <div class="mode-selector">
+        <button class="mode-btn active" data-mode="SOLO">SOLO</button>
+        <button class="mode-btn" data-mode="DUO">DUO</button>
+        <button class="mode-btn" data-mode="SQUAD">SQUAD</button>
+      </div>
+      <button id="startMatchBtn" class="start-btn">OYUNA BAŞLA</button>
+    </div>
+  </div>
+
+  <!-- OYUN İÇİ TÜRKÇE HUD -->
+  <div id="hudScreen" class="hidden">
+    <!-- Üst Bilgi Barı -->
+    <div class="hud-top">
+      <div class="match-info">
+        <div class="info-box">HAYATTA: <span id="aliveCount">20</span></div>
+        <div class="info-box">LEŞ: <span id="killCount">0</span></div>
+        <div class="info-box zone-box">ALANA KALAN: <span id="zoneTimer">01:30</span></div>
+      </div>
+      <div class="fps-counter">FPS: <span id="gameFps">60</span></div>
+    </div>
+
+    <!-- Nişangâh (Crosshair) -->
+    <div id="crosshair">
+      <div class="ch-line ch-top"></div>
+      <div class="ch-line ch-bottom"></div>
+      <div class="ch-line ch-left"></div>
+      <div class="ch-line ch-right"></div>
+      <div class="ch-dot"></div>
+    </div>
+
+    <!-- Etkileşim Uyarısı -->
+    <div id="interactPrompt" class="hidden">[E] EŞYAYI AL / KAPIYI AÇ</div>
+
+    <!-- Alt Sağ Silah & Can Barı -->
+    <div class="hud-bottom">
+      <div class="health-container">
+        <div class="armor-bar"><div id="armorFill" style="width: 100%"></div></div>
+        <div class="hp-bar"><div id="hpFill" style="width: 100%"></div></div>
+        <div class="hp-text">CAN: <span id="hpValue">100</span> | ZIRH: <span id="armorValue">100</span></div>
+      </div>
+
+      <div class="weapon-slots">
+        <div class="w-slot active" id="slot1">
+          <span class="w-key">1</span>
+          <span class="w-name" id="w1Name">M416 PİYADE</span>
+          <span class="w-ammo"><b id="ammoClip">30</b> / <span id="ammoReserve">180</span></span>
+        </div>
+        <div class="w-slot" id="slot2">
+          <span class="w-key">2</span>
+          <span class="w-name" id="w2Name">KAR98K KESKİN</span>
+          <span class="w-ammo"><b id="sniperClip">5</b> / <span id="sniperReserve">40</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobil Dokunmatik Kontroller -->
+    <div id="mobileControls">
+      <div id="joystickZone"><div id="joystickKnob"></div></div>
+      <div class="mobile-actions">
+        <button id="mFireBtn" class="m-btn fire">ATEŞ</button>
+        <button id="mAimBtn" class="m-btn">NİŞAN</button>
+        <button id="mJumpBtn" class="m-btn">ZIPLA</button>
+        <button id="mCrouchBtn" class="m-btn">EĞİL</button>
+        <button id="mReloadBtn" class="m-btn">ŞARJÖR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ENVANTER EKRANI (TAB) -->
+  <div id="inventoryScreen" class="overlay hidden">
+    <div class="inv-panel">
+      <h2>TAKTİKSEL ENVANTER (TAB)</h2>
+      <div class="inv-grid">
+        <div class="inv-col">
+          <h3>EKİPMAN</h3>
+          <div class="inv-item">🪖 Seviye 3 Kask (%100)</div>
+          <div class="inv-item">🦺 Seviye 3 Çelik Yelek (%100)</div>
+          <div class="inv-item">🎒 Askeri Sırt Çantası</div>
+        </div>
+        <div class="inv-col">
+          <h3>ÇANTA İÇERİĞİ</h3>
+          <div class="inv-item" id="invMedkit">🩹 İlk Yardım Çantası (x2) - [Kullanmak için Tıkla]</div>
+          <div class="inv-item">🔫 5.56mm Mermi (180)</div>
+          <div class="inv-item">🎯 7.62mm Mermi (40)</div>
+        </div>
+      </div>
+      <button id="closeInvBtn" class="start-btn" style="margin-top:20px;">KAPAT</button>
+    </div>
+  </div>
+
+  <!-- MAÇ SONU EKRANI -->
+  <div id="endScreen" class="overlay hidden">
+    <div class="end-card">
+      <h1 id="endTitle">ÇORBAYA KAŞIK SALLADIN!</h1>
+      <p id="endSubtitle">1. Sıra • Hayatta Kalan Son Asker</p>
+      <div class="end-stats">
+        <div>TOPLAM LEŞ: <b id="endKills">0</b></div>
+        <div>VERİLEN HASAR: <b id="endDamage">0</b></div>
+      </div>
+      <button onclick="location.reload()" class="start-btn">LOBİYE DÖN</button>
+    </div>
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
