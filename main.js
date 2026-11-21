@@ -1,8 +1,3 @@
-import * as THREE from 'three';
-import { GameWorld } from './world.js';
-import { PlayerController } from './player.js';
-import { CombatAndBRSystem } from './combat.js';
-
 let scene, camera, renderer;
 let world, player, combat;
 let isMatchStarted = false;
@@ -35,7 +30,7 @@ function setupMobileControls() {
   let touchId = null;
 
   joyZone.addEventListener('touchstart', (e) => {
-    touchId = e.changedTouches.identifier;
+    touchId = e.changedTouches[0].identifier;
   });
 
   joyZone.addEventListener('touchmove', (e) => {
@@ -63,17 +58,17 @@ function setupMobileControls() {
 
   let lastTouchX = 0, lastTouchY = 0;
   document.getElementById('gameCanvas').addEventListener('touchstart', (e) => {
-    lastTouchX = e.touches.clientX;
-    lastTouchY = e.touches.clientY;
+    lastTouchX = e.touches[0].clientX;
+    lastTouchY = e.touches[0].clientY;
   });
   document.getElementById('gameCanvas').addEventListener('touchmove', (e) => {
-    if (e.touches.length === 1 && e.touches.clientX > window.innerWidth * 0.4) {
-      const dx = e.touches.clientX - lastTouchX;
-      const dy = e.touches.clientY - lastTouchY;
+    if (e.touches.length === 1 && e.touches[0].clientX > window.innerWidth * 0.4) {
+      const dx = e.touches[0].clientX - lastTouchX;
+      const dy = e.touches[0].clientY - lastTouchY;
       player.yaw -= dx * 0.005;
       player.pitch = Math.max(-0.45, Math.min(1.1, player.pitch + dy * 0.005));
-      lastTouchX = e.touches.clientX;
-      lastTouchY = e.touches.clientY;
+      lastTouchX = e.touches[0].clientX;
+      lastTouchY = e.touches[0].clientY;
     }
   });
 
