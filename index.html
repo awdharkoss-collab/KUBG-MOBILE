@@ -5,17 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>SON HÜCRE: Battle Royale 3D TPS</title>
   <link rel="stylesheet" href="style.css" />
-     <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cloudflare.com"
-      }
-    }
-  </script>
-
 </head>
 <body>
-  <!-- 3D Oyun Tuvali -->
   <canvas id="gameCanvas"></canvas>
 
   <!-- ANA MENÜ / LOBİ -->
@@ -56,7 +47,6 @@
 
   <!-- OYUN İÇİ TÜRKÇE HUD -->
   <div id="hudScreen" class="hidden">
-    <!-- Üst Bilgi Barı -->
     <div class="hud-top">
       <div class="match-info">
         <div class="info-box">HAYATTA: <span id="aliveCount">20</span></div>
@@ -66,7 +56,6 @@
       <div class="fps-counter">FPS: <span id="gameFps">60</span></div>
     </div>
 
-    <!-- Nişangâh (Crosshair) -->
     <div id="crosshair">
       <div class="ch-line ch-top"></div>
       <div class="ch-line ch-bottom"></div>
@@ -75,10 +64,8 @@
       <div class="ch-dot"></div>
     </div>
 
-    <!-- Etkileşim Uyarısı -->
-    <div id="interactPrompt" class="hidden">[E] EŞYAYI AL / KAPIYI AÇ</div>
+    <div id="interactPrompt" class="hidden">[E] EŞYAYI AL / ARACA BİN</div>
 
-    <!-- Alt Sağ Silah & Can Barı -->
     <div class="hud-bottom">
       <div class="health-container">
         <div class="armor-bar"><div id="armorFill" style="width: 100%"></div></div>
@@ -89,18 +76,17 @@
       <div class="weapon-slots">
         <div class="w-slot active" id="slot1">
           <span class="w-key">1</span>
-          <span class="w-name" id="w1Name">M416 PİYADE</span>
+          <span class="w-name">M416 PİYADE</span>
           <span class="w-ammo"><b id="ammoClip">30</b> / <span id="ammoReserve">180</span></span>
         </div>
         <div class="w-slot" id="slot2">
           <span class="w-key">2</span>
-          <span class="w-name" id="w2Name">KAR98K KESKİN</span>
+          <span class="w-name">KAR98K KESKİN</span>
           <span class="w-ammo"><b id="sniperClip">5</b> / <span id="sniperReserve">40</span></span>
         </div>
       </div>
     </div>
 
-    <!-- Mobil Dokunmatik Kontroller -->
     <div id="mobileControls">
       <div id="joystickZone"><div id="joystickKnob"></div></div>
       <div class="mobile-actions">
@@ -126,7 +112,7 @@
         </div>
         <div class="inv-col">
           <h3>ÇANTA İÇERİĞİ</h3>
-          <div class="inv-item" id="invMedkit">🩹 İlk Yardım Çantası (x2) - [Kullanmak için Tıkla]</div>
+          <div class="inv-item" id="invMedkit">🩹 İlk Yardım Çantası (x2) - [Kullan]</div>
           <div class="inv-item">🔫 5.56mm Mermi (180)</div>
           <div class="inv-item">🎯 7.62mm Mermi (40)</div>
         </div>
@@ -148,6 +134,10 @@
     </div>
   </div>
 
-  <script type="module" src="main.js"></script>
+  <script src="https://cloudflare.com"></script>
+  <script src="world.js"></script>
+  <script src="player.js"></script>
+  <script src="combat.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>
