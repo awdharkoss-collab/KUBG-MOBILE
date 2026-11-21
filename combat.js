@@ -1,6 +1,4 @@
-import * as THREE from 'three';
-
-export class CombatAndBRSystem {
+class CombatAndBRSystem {
   constructor(scene, camera, player, world) {
     this.scene = scene;
     this.camera = camera;
@@ -12,7 +10,6 @@ export class CombatAndBRSystem {
     this.kills = 0;
     this.totalDamage = 0;
 
-    // Silah Envanteri
     this.activeSlot = 1;
     this.weapons = {
       1: { name: 'M416 PİYADE', clip: 30, maxClip: 30, reserve: 180, dmg: 26, rate: 0.11, recoil: 0.015 },
@@ -21,7 +18,6 @@ export class CombatAndBRSystem {
     this.lastShotTime = 0;
     this.isFiring = false;
 
-    // Battle Royale Mavi Alan
     this.zoneRadius = 210;
     this.zoneTimer = 90;
     this.createBlueZone();
@@ -73,6 +69,7 @@ export class CombatAndBRSystem {
       });
     }
   }
+
   setupCombatInputs() {
     window.addEventListener('mousedown', (e) => {
       if (e.button === 0 && document.pointerLockElement === document.body) this.isFiring = true;
@@ -112,9 +109,7 @@ export class CombatAndBRSystem {
       this.updateHUD();
     }
   }
-
   handleInteraction() {
-    // Araç Binme / İnme
     if (this.player.inVehicle) {
       this.player.inVehicle = null;
       this.player.group.position.x += 2.2;
@@ -128,7 +123,6 @@ export class CombatAndBRSystem {
       }
     }
 
-    // Yerdeki Eşyaları Toplama
     for (const item of this.world.lootItems) {
       if (item.active && this.player.group.position.distanceTo(item.mesh.position) < 3.5) {
         item.active = false;
@@ -148,7 +142,7 @@ export class CombatAndBRSystem {
     this.lastShotTime = time;
     w.clip--;
     this.player.muzzleFlash.intensity = 6;
-    this.player.pitch += w.recoil; // Kamera geri tepmesi
+    this.player.pitch += w.recoil;
 
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
@@ -176,7 +170,6 @@ export class CombatAndBRSystem {
   update(dt, time) {
     if (this.isFiring && !this.player.isDead) this.firePlayerWeapon(time);
 
-    // Mavi Alan Daralması
     this.zoneTimer = Math.max(0, this.zoneTimer - dt);
     if (this.zoneRadius > 25) {
       this.zoneRadius -= 1.2 * dt;
@@ -188,7 +181,6 @@ export class CombatAndBRSystem {
       this.damagePlayer(4 * dt);
     }
 
-    // Mermi Fiziği ve İsabet Kontrolü
     for (let i = this.bullets.length - 1; i >= 0; i--) {
       const b = this.bullets[i];
       b.mesh.position.addScaledVector(b.dir, b.speed * dt);
@@ -219,7 +211,6 @@ export class CombatAndBRSystem {
       }
     }
 
-    // Bot Yapay Zekâsı (Devriye, Algılama ve Ateş)
     for (const bot of this.bots) {
       if (!bot.alive) continue;
       const distToPlayer = bot.mesh.position.distanceTo(this.player.group.position);
@@ -247,7 +238,6 @@ export class CombatAndBRSystem {
       bot.mesh.position.y = this.world.getTerrainHeight(bot.mesh.position.x, bot.mesh.position.z);
     }
 
-    // Etkileşim Uyarısı Kontrolü
     let canInteract = false;
     for (const v of this.world.vehicles) if (this.player.group.position.distanceTo(v.mesh.position) < 4.5) canInteract = true;
     for (const item of this.world.lootItems) if (item.active && this.player.group.position.distanceTo(item.mesh.position) < 3.5) canInteract = true;
