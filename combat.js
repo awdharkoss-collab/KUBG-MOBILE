@@ -18,11 +18,58 @@ class CombatAndBRSystem {
     this.lastShotTime = 0;
     this.isFiring = false;
 
+    this.audioCtx = null;
     this.zoneRadius = 210;
     this.zoneTimer = 90;
     this.createBlueZone();
     this.spawnBots(19);
     this.setupCombatInputs();
+  }
+
+  playSound(type) {
+    try {
+      if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+      const ctx = this.audioCtx;
+      const now = ctx.currentTime;
+
+      if (type === 'shoot') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = this.activeSlot === 1 ? 'sawtooth' : 'square';
+        osc.frequency.setValueAtTime(this.activeSlot === 1 ? 190 : 120, now);
+        osc.frequency.exponentialRampToValueAtTime(28, now + 0.14);
+        gain.gain.setValueAtTime(0.28, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } else if (type === 'hit') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(950, now);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.06);
+      } else if (type === 'reload') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.setValueAtTime(520, now + 0.12);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      }
+    } catch (e) {}
   }
 
   createBlueZone() {
@@ -41,17 +88,26 @@ class CombatAndBRSystem {
   }
 
   spawnBots(count) {
-    const botSuit = new THREE.MeshStandardMaterial({ color: 0x7f1d1d, roughness: 0.7 });
-    const headMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.4 });
+    const enemySuit = new THREE.MeshStandardMaterial({ color: 0x5c2626, roughness: 0.8 });
+    const vestMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.5 });
+    const headMat = new THREE.MeshStandardMaterial({ color: 0x27272a, roughness: 0.4 });
 
     for (let i = 0; i < count; i++) {
       const group = new THREE.Group();
-      const body = new THREE.Mesh(new THREE.BoxGeometry(0.65, 1.3, 0.38), botSuit);
-      body.position.y = 0.9;
-      body.castShadow = true;
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 12, 10), headMat);
-      head.position.y = 1.75;
-      group.add(body, head);
+      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.2, 0.72, 12), enemySuit);
+      torso.position.y = 1.18;
+      torso.castShadow = true;
+
+      const vest = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.22, 0.5, 12), vestMat);
+      vest.position.y = 1.2;
+
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 14, 12), headMat);
+      head.position.y = 1.72;
+
+      const legs = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.14, 0.82, 10), enemySuit);
+      legs.position.y = 0.42;
+
+      group.add(torso, vest, head, legs);
 
       const angle = (i / count) * Math.PI * 2;
       const dist = 45 + Math.random() * 110;
@@ -69,7 +125,6 @@ class CombatAndBRSystem {
       });
     }
   }
-
   setupCombatInputs() {
     window.addEventListener('mousedown', (e) => {
       if (e.button === 0 && document.pointerLockElement === document.body) this.isFiring = true;
@@ -106,9 +161,11 @@ class CombatAndBRSystem {
       const take = Math.min(needed, w.reserve);
       w.clip += take;
       w.reserve -= take;
+      this.playSound('reload');
       this.updateHUD();
     }
   }
+
   handleInteraction() {
     if (this.player.inVehicle) {
       this.player.inVehicle = null;
@@ -127,9 +184,10 @@ class CombatAndBRSystem {
       if (item.active && this.player.group.position.distanceTo(item.mesh.position) < 3.5) {
         item.active = false;
         item.mesh.visible = false;
-        this.weapons[1].reserve += 60;
-        this.weapons[2].reserve += 10;
+        this.weapons.reserve += 60;
+        this.weapons.reserve += 10;
         this.player.hp = Math.min(100, this.player.hp + 35);
+        this.playSound('reload');
         this.updateHUD();
       }
     }
@@ -141,14 +199,15 @@ class CombatAndBRSystem {
 
     this.lastShotTime = time;
     w.clip--;
-    this.player.muzzleFlash.intensity = 6;
+    this.player.muzzleFlash.intensity = 7;
     this.player.pitch += w.recoil;
+    this.playSound('shoot');
 
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
 
-    const bulletGeo = new THREE.SphereGeometry(0.08, 6, 6);
-    const bulletMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+    const bulletGeo = new THREE.SphereGeometry(0.06, 6, 6);
+    const bulletMat = new THREE.MeshBasicMaterial({ color: 0xfde047 });
     const bMesh = new THREE.Mesh(bulletGeo, bulletMat);
 
     const startPos = this.player.group.position.clone().add(new THREE.Vector3(0, 1.45, 0));
@@ -158,7 +217,7 @@ class CombatAndBRSystem {
     this.bullets.push({
       mesh: bMesh,
       dir: raycaster.ray.direction.clone(),
-      speed: 140,
+      speed: 160,
       dmg: w.dmg,
       fromPlayer: true,
       life: 1.8
@@ -188,9 +247,10 @@ class CombatAndBRSystem {
 
       if (b.fromPlayer) {
         for (const bot of this.bots) {
-          if (bot.alive && b.mesh.position.distanceTo(bot.mesh.position.clone().add(new THREE.Vector3(0, 1, 0))) < 0.9) {
+          if (bot.alive && b.mesh.position.distanceTo(bot.mesh.position.clone().add(new THREE.Vector3(0, 1.1, 0))) < 0.85) {
             bot.hp -= b.dmg;
             this.totalDamage += b.dmg;
+            this.playSound('hit');
             b.life = 0;
             if (bot.hp <= 0) {
               bot.alive = false;
@@ -200,7 +260,7 @@ class CombatAndBRSystem {
             }
           }
         }
-      } else if (!this.player.isDead && b.mesh.position.distanceTo(this.player.group.position.clone().add(new THREE.Vector3(0, 1, 0))) < 0.85) {
+      } else if (!this.player.isDead && b.mesh.position.distanceTo(this.player.group.position.clone().add(new THREE.Vector3(0, 1.1, 0))) < 0.85) {
         this.damagePlayer(12);
         b.life = 0;
       }
@@ -215,7 +275,7 @@ class CombatAndBRSystem {
       if (!bot.alive) continue;
       const distToPlayer = bot.mesh.position.distanceTo(this.player.group.position);
 
-      if (distToPlayer < 55 && !this.player.isDead) {
+      if (distToPlayer < 60 && !this.player.isDead) {
         bot.mesh.lookAt(this.player.group.position.x, bot.mesh.position.y, this.player.group.position.z);
         if (distToPlayer > 18) {
           bot.mesh.position.x += Math.sin(bot.mesh.rotation.y) * 3.8 * dt;
@@ -225,10 +285,10 @@ class CombatAndBRSystem {
         if (bot.fireCooldown <= 0) {
           bot.fireCooldown = 1.6 + Math.random();
           const dir = this.player.group.position.clone().sub(bot.mesh.position).normalize();
-          const bMesh = new THREE.Mesh(new THREE.SphereGeometry(0.08), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+          const bMesh = new THREE.Mesh(new THREE.SphereGeometry(0.06), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
           bMesh.position.copy(bot.mesh.position).add(new THREE.Vector3(0, 1.4, 0));
           this.scene.add(bMesh);
-          this.bullets.push({ mesh: bMesh, dir, speed: 95, dmg: 12, fromPlayer: false, life: 1.5 });
+          this.bullets.push({ mesh: bMesh, dir, speed: 105, dmg: 12, fromPlayer: false, life: 1.5 });
         }
       } else {
         bot.mesh.position.x += Math.sin(bot.dir) * 2.5 * dt;
@@ -288,9 +348,9 @@ class CombatAndBRSystem {
     document.getElementById('hpFill').style.width = `${this.player.hp}%`;
     document.getElementById('armorFill').style.width = `${this.player.armor}%`;
     document.getElementById('killCount').innerText = this.kills;
-    document.getElementById('ammoClip').innerText = this.weapons[1].clip;
-    document.getElementById('ammoReserve').innerText = this.weapons[1].reserve;
-    document.getElementById('sniperClip').innerText = this.weapons[2].clip;
-    document.getElementById('sniperReserve').innerText = this.weapons[2].reserve;
+    document.getElementById('ammoClip').innerText = this.weapons.clip;
+    document.getElementById('ammoReserve').innerText = this.weapons.reserve;
+    document.getElementById('sniperClip').innerText = this.weapons.clip;
+    document.getElementById('sniperReserve').innerText = this.weapons.reserve;
   }
 }
