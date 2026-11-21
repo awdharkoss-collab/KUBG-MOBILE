@@ -30,63 +30,117 @@ class PlayerController {
     this.group = new THREE.Group();
     this.group.position.set(0, 5, 16);
 
-    const suitMat = new THREE.MeshStandardMaterial({ color: 0x2f3e2e, roughness: 0.75 });
-    const vestMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.3 });
-    const skinMat = new THREE.MeshStandardMaterial({ color: 0xd9a077, roughness: 0.6 });
-    const helmetMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.35, metalness: 0.5 });
+    const camoMat = new THREE.MeshStandardMaterial({ color: 0x364532, roughness: 0.85, metalness: 0.05 });
+    const vestMat = new THREE.MeshStandardMaterial({ color: 0x1c222b, roughness: 0.55, metalness: 0.35 });
+    const skinMat = new THREE.MeshStandardMaterial({ color: 0xd69e76, roughness: 0.65 });
+    const bootMat = new THREE.MeshStandardMaterial({ color: 0x111317, roughness: 0.7, metalness: 0.2 });
+    const metalMat = new THREE.MeshStandardMaterial({ color: 0x181c22, roughness: 0.25, metalness: 0.9 });
 
-    this.torso = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.85, 0.35), suitMat);
-    this.torso.position.y = 1.25;
-    this.torso.castShadow = true;
+    // Anatomik Gövde ve Çelik Yelek
+    this.torso = new THREE.Group();
+    this.torso.position.y = 1.22;
 
-    const vest = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.65, 0.42), vestMat);
-    vest.position.y = 0.05;
-    this.torso.add(vest);
+    const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.20, 0.68, 16), camoMat);
+    chest.scale.set(1.25, 1, 0.78);
+    chest.castShadow = true;
 
-    this.head = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.38, 0.36), skinMat);
-    this.head.position.y = 0.65;
-    const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 12), helmetMat);
-    helmet.position.y = 0.06;
-    this.head.add(helmet);
+    const armorPlate = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.22, 0.52, 16), vestMat);
+    armorPlate.scale.set(1.28, 1, 0.86);
+    armorPlate.position.y = 0.04;
+
+    // Taktik Sırt Çantası
+    const backpack = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.48, 0.22), vestMat);
+    backpack.position.set(0, 0.04, -0.22);
+    backpack.castShadow = true;
+
+    this.torso.add(chest, armorPlate, backpack);
+
+    // Yuvarlak Kafa, Kask ve Taktik Vizör
+    this.head = new THREE.Group();
+    this.head.position.y = 0.52;
+
+    const skull = new THREE.Mesh(new THREE.SphereGeometry(0.16, 18, 16), skinMat);
+    const helmet = new THREE.Mesh(
+      new THREE.SphereGeometry(0.185, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.62),
+      vestMat
+    );
+    helmet.position.y = 0.02;
+
+    const visor = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.175, 0.175, 0.07, 16, 1, false, -0.9, 1.8),
+      new THREE.MeshStandardMaterial({ color: 0x0ea5e9, roughness: 0.1, metalness: 0.9 })
+    );
+    visor.position.set(0, 0.03, 0.02);
+
+    this.head.add(skull, helmet, visor);
     this.torso.add(this.head);
 
-    this.leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.7, 0.2), suitMat);
-    this.leftArm.position.set(-0.45, 0.05, 0.15);
-    this.leftArm.rotation.x = -0.8;
+    // Omuz ve Kollar (Silindirik Eklemler)
+    this.leftArm = new THREE.Group();
+    this.leftArm.position.set(-0.34, 0.24, 0.05);
+    const lArmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.06, 0.56, 12), camoMat);
+    lArmMesh.position.y = -0.24;
+    const lGlove = new THREE.Mesh(new THREE.SphereGeometry(0.065, 10, 10), bootMat);
+    lGlove.position.y = -0.54;
+    this.leftArm.add(lArmMesh, lGlove);
+    this.leftArm.rotation.set(-0.85, 0, -0.25);
 
-    this.rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.7, 0.2), suitMat);
-    this.rightArm.position.set(0.45, 0.05, 0.2);
-    this.rightArm.rotation.x = -1.1;
+    this.rightArm = new THREE.Group();
+    this.rightArm.position.set(0.34, 0.24, 0.05);
+    const rArmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.06, 0.56, 12), camoMat);
+    rArmMesh.position.y = -0.24;
+    const rGlove = new THREE.Mesh(new THREE.SphereGeometry(0.065, 10, 10), bootMat);
+    rGlove.position.y = -0.54;
+    this.rightArm.add(rArmMesh, rGlove);
+    this.rightArm.rotation.x = -1.15;
 
+    // Detaylı M416 Piyade Tüfeği + 8x Dürbün + Susturucu
     this.gunGroup = new THREE.Group();
-    const gunBody = new THREE.Mesh(
-      new THREE.BoxGeometry(0.1, 0.14, 0.85),
-      new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.85, roughness: 0.25 })
-    );
-    const scope = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.035, 0.035, 0.25, 10),
-      new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.2 })
-    );
+    const receiver = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.11, 0.48), metalMat);
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.42, 10), metalMat);
+    barrel.rotation.x = Math.PI / 2;
+    barrel.position.set(0, 0.02, 0.42);
+
+    const silencer = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.026, 0.18, 12), bootMat);
+    silencer.rotation.x = Math.PI / 2;
+    silencer.position.set(0, 0.02, 0.66);
+
+    const mag = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.18, 0.09), bootMat);
+    mag.position.set(0, -0.11, 0.08);
+    mag.rotation.x = 0.2;
+
+    const scope = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.24, 12), bootMat);
     scope.rotation.x = Math.PI / 2;
-    scope.position.set(0, 0.1, -0.05);
+    scope.position.set(0, 0.09, -0.02);
 
-    this.muzzleFlash = new THREE.PointLight(0xffaa00, 0, 8);
-    this.muzzleFlash.position.set(0, 0.05, 0.6);
+    this.muzzleFlash = new THREE.PointLight(0xffaa00, 0, 9);
+    this.muzzleFlash.position.set(0, 0.04, 0.8);
 
-    this.gunGroup.add(gunBody, scope, this.muzzleFlash);
-    this.gunGroup.position.set(0, -0.35, 0.35);
-    this.gunGroup.rotation.x = 1.1;
+    this.gunGroup.add(receiver, barrel, silencer, mag, scope, this.muzzleFlash);
+    this.gunGroup.position.set(0, -0.52, 0.22);
+    this.gunGroup.rotation.x = 1.15;
     this.rightArm.add(this.gunGroup);
 
     this.torso.add(this.leftArm, this.rightArm);
 
-    this.leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.85, 0.24), suitMat);
-    this.leftLeg.position.set(-0.18, 0.42, 0);
-    this.leftLeg.castShadow = true;
+    // Silindirik Bacaklar ve Askeri Botlar
+    this.leftLeg = new THREE.Group();
+    this.leftLeg.position.set(-0.15, 0.86, 0);
+    const lLegMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.075, 0.76, 12), camoMat);
+    lLegMesh.position.y = -0.38;
+    lLegMesh.castShadow = true;
+    const lBoot = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.26), bootMat);
+    lBoot.position.set(0, -0.78, 0.04);
+    this.leftLeg.add(lLegMesh, lBoot);
 
-    this.rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.85, 0.24), suitMat);
-    this.rightLeg.position.set(0.18, 0.42, 0);
-    this.rightLeg.castShadow = true;
+    this.rightLeg = new THREE.Group();
+    this.rightLeg.position.set(0.15, 0.86, 0);
+    const rLegMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.075, 0.76, 12), camoMat);
+    rLegMesh.position.y = -0.38;
+    rLegMesh.castShadow = true;
+    const rBoot = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.26), bootMat);
+    rBoot.position.set(0, -0.78, 0.04);
+    this.rightLeg.add(rLegMesh, rBoot);
 
     this.group.add(this.torso, this.leftLeg, this.rightLeg);
     this.scene.add(this.group);
@@ -192,28 +246,31 @@ class PlayerController {
       this.isGrounded = true;
     }
 
+    // Doğal Yürüyüş / Depar ve Gövde Salınımı Animasyonu
     const animSpeed = this.isSprinting ? 14 : 9;
     if (isMoving && this.isGrounded) {
       this.leftLeg.rotation.x = Math.sin(time * animSpeed) * 0.65;
       this.rightLeg.rotation.x = -Math.sin(time * animSpeed) * 0.65;
+      this.torso.position.y = (this.isCrouching ? 0.92 : 1.22) + Math.abs(Math.cos(time * animSpeed)) * 0.05;
+      this.torso.rotation.z = Math.sin(time * animSpeed) * 0.04;
     } else {
       this.leftLeg.rotation.x = THREE.MathUtils.lerp(this.leftLeg.rotation.x, 0, 10 * dt);
       this.rightLeg.rotation.x = THREE.MathUtils.lerp(this.rightLeg.rotation.x, 0, 10 * dt);
+      const targetTorsoY = this.isCrouching ? 0.92 : 1.22;
+      this.torso.position.y = THREE.MathUtils.lerp(this.torso.position.y, targetTorsoY, 10 * dt);
+      this.torso.rotation.z = THREE.MathUtils.lerp(this.torso.rotation.z, 0, 10 * dt);
     }
 
-    const targetTorsoY = this.isCrouching ? 0.9 : 1.25;
-    this.torso.position.y = THREE.MathUtils.lerp(this.torso.position.y, targetTorsoY, 10 * dt);
     this.muzzleFlash.intensity = THREE.MathUtils.lerp(this.muzzleFlash.intensity, 0, 25 * dt);
-
     this.updateCamera(dt, false);
   }
 
   updateCamera(dt, inCar) {
-    const targetDist = inCar ? 7.5 : this.isAiming ? 2.1 : 4.2;
+    const targetDist = inCar ? 7.5 : this.isAiming ? 1.85 : 3.9;
     this.camDist = THREE.MathUtils.lerp(this.camDist, targetDist, 10 * dt);
 
-    const shoulderOffset = inCar ? 0 : this.isAiming ? 0.75 : 0.45;
-    const heightOffset = inCar ? 2.4 : this.isCrouching ? 1.25 : 1.65;
+    const shoulderOffset = inCar ? 0 : this.isAiming ? 0.68 : 0.45;
+    const heightOffset = inCar ? 2.4 : this.isCrouching ? 1.2 : 1.62;
 
     const focusPoint = new THREE.Vector3(
       this.group.position.x - Math.cos(this.yaw) * shoulderOffset,
