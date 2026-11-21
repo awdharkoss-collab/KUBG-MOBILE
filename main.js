@@ -1,12 +1,9 @@
 import * as THREE from 'three';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { GameWorld } from './world.js';
 import { PlayerController } from './player.js';
 import { CombatAndBRSystem } from './combat.js';
 
-let scene, camera, renderer, composer;
+let scene, camera, renderer;
 let world, player, combat;
 let isMatchStarted = false;
 let clock = new THREE.Clock();
@@ -20,7 +17,7 @@ function initEngine(quality = 'high') {
   renderer.shadowMap.enabled = quality !== 'low';
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
+  renderer.toneMappingExposure = 1.15;
 
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -28,14 +25,6 @@ function initEngine(quality = 'high') {
   world = new GameWorld(scene, quality);
   player = new PlayerController(scene, camera, world);
   combat = new CombatAndBRSystem(scene, camera, player, world);
-
-  // Post-Processing (Bloom + HDR Efekti)
-  composer = new EffectComposer(renderer);
-  composer.addPass(new RenderPass(scene, camera));
-  if (quality === 'high' || quality === 'ultra') {
-    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.25, 0.4, 0.85);
-    composer.addPass(bloomPass);
-  }
 
   setupMobileControls();
 }
@@ -72,7 +61,6 @@ function setupMobileControls() {
     player.joyInput.y = 0;
   });
 
-  // Sağ taraf dokunmatik kamera döndürme
   let lastTouchX = 0, lastTouchY = 0;
   document.getElementById('gameCanvas').addEventListener('touchstart', (e) => {
     lastTouchX = e.touches.clientX;
@@ -99,7 +87,6 @@ function setupMobileControls() {
   document.getElementById('mReloadBtn').addEventListener('click', () => combat.reloadWeapon());
 }
 
-// Lobi Arayüzü Etkileşimleri
 document.querySelectorAll('.mode-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
@@ -132,28 +119,25 @@ window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  composer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Ana Oyun Döngüsü
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
   const elapsed = clock.getElapsedTime();
 
   if (!isMatchStarted) {
-    // Lobide 3D Karakter Vitrini Dönüşü
+    player.group.position.y = world.getTerrainHeight(player.group.position.x, player.group.position.z);
     player.group.rotation.y = elapsed * 0.6;
-    camera.position.set(player.group.position.x + 2.2, player.group.position.y + 1.8, player.group.position.z + 3.4);
-    camera.lookAt(player.group.position.x, player.group.position.y + 1.2, player.group.position.z);
+    camera.position.set(player.group.position.x + 1.8, player.group.position.y + 1.7, player.group.position.z + 3.2);
+    camera.lookAt(player.group.position.x, player.group.position.y + 1.1, player.group.position.z);
   } else {
     player.update(dt, elapsed);
     combat.update(dt, elapsed);
   }
 
-  composer.render();
+  renderer.render(scene, camera);
 
-  // FPS Hesaplama
   frames++;
   const now = performance.now();
   if (now - lastFpsTime >= 1000) {
