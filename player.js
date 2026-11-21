@@ -1,6 +1,4 @@
-import * as THREE from 'three';
-
-export class PlayerController {
+class PlayerController {
   constructor(scene, camera, world) {
     this.scene = scene;
     this.camera = camera;
@@ -11,19 +9,16 @@ export class PlayerController {
     this.isDead = false;
     this.inVehicle = null;
 
-    // Hareket ve Fizik Değişkenleri
     this.velocity = new THREE.Vector3();
     this.isGrounded = false;
     this.isCrouching = false;
     this.isAiming = false;
     this.isSprinting = false;
 
-    // TPS Kamera Açıları
     this.yaw = 0;
     this.pitch = 0.25;
     this.camDist = 4.2;
 
-    // Giriş Kontrolleri
     this.keys = {};
     this.joyInput = { x: 0, y: 0 };
 
@@ -40,7 +35,6 @@ export class PlayerController {
     const skinMat = new THREE.MeshStandardMaterial({ color: 0xd9a077, roughness: 0.6 });
     const helmetMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.35, metalness: 0.5 });
 
-    // Gövde ve Çelik Yelek
     this.torso = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.85, 0.35), suitMat);
     this.torso.position.y = 1.25;
     this.torso.castShadow = true;
@@ -49,7 +43,6 @@ export class PlayerController {
     vest.position.y = 0.05;
     this.torso.add(vest);
 
-    // Kafa ve Seviye 3 Kask
     this.head = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.38, 0.36), skinMat);
     this.head.position.y = 0.65;
     const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 12), helmetMat);
@@ -57,7 +50,6 @@ export class PlayerController {
     this.head.add(helmet);
     this.torso.add(this.head);
 
-    // Kollar ve 3D Tüfek
     this.leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.7, 0.2), suitMat);
     this.leftArm.position.set(-0.45, 0.05, 0.15);
     this.leftArm.rotation.x = -0.8;
@@ -66,7 +58,6 @@ export class PlayerController {
     this.rightArm.position.set(0.45, 0.05, 0.2);
     this.rightArm.rotation.x = -1.1;
 
-    // 3D M416 / Keskin Nişancı Silah Modeli
     this.gunGroup = new THREE.Group();
     const gunBody = new THREE.Mesh(
       new THREE.BoxGeometry(0.1, 0.14, 0.85),
@@ -89,7 +80,6 @@ export class PlayerController {
 
     this.torso.add(this.leftArm, this.rightArm);
 
-    // Bacaklar
     this.leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.85, 0.24), suitMat);
     this.leftLeg.position.set(-0.18, 0.42, 0);
     this.leftLeg.castShadow = true;
@@ -112,7 +102,6 @@ export class PlayerController {
     });
     window.addEventListener('keyup', (e) => (this.keys[e.code] = false));
 
-    // Fare ile 360° TPS Kamera ve Sağ Tık Nişan
     document.addEventListener('mousemove', (e) => {
       if (document.pointerLockElement === document.body) {
         this.yaw -= e.movementX * 0.0025;
@@ -146,7 +135,6 @@ export class PlayerController {
   update(dt, time) {
     if (this.isDead) return;
 
-    // Araç Sürüş Modu
     if (this.inVehicle) {
       const car = this.inVehicle;
       if (this.keys['KeyW'] || this.joyInput.y < -0.2) car.speed = Math.min(28, car.speed + 18 * dt);
@@ -170,7 +158,6 @@ export class PlayerController {
 
     this.group.visible = true;
 
-    // Yürüme / Koşma Yönü
     let moveF = (this.keys['KeyW'] ? 1 : 0) - (this.keys['KeyS'] ? 1 : 0) - this.joyInput.y;
     let moveR = (this.keys['KeyD'] ? 1 : 0) - (this.keys['KeyA'] ? 1 : 0) + this.joyInput.x;
     const isMoving = Math.hypot(moveF, moveR) > 0.1;
@@ -195,7 +182,6 @@ export class PlayerController {
       this.group.rotation.y = this.yaw + Math.PI;
     }
 
-    // Yerçekimi ve Zemin Teması
     this.velocity.y -= 19.8 * dt;
     this.group.position.y += this.velocity.y * dt;
     const groundY = this.world.getTerrainHeight(this.group.position.x, this.group.position.z);
@@ -206,7 +192,6 @@ export class PlayerController {
       this.isGrounded = true;
     }
 
-    // İskelet / Uzuv Animasyonları
     const animSpeed = this.isSprinting ? 14 : 9;
     if (isMoving && this.isGrounded) {
       this.leftLeg.rotation.x = Math.sin(time * animSpeed) * 0.65;
@@ -216,7 +201,6 @@ export class PlayerController {
       this.rightLeg.rotation.x = THREE.MathUtils.lerp(this.rightLeg.rotation.x, 0, 10 * dt);
     }
 
-    // Eğilme (Crouch) Animasyonu
     const targetTorsoY = this.isCrouching ? 0.9 : 1.25;
     this.torso.position.y = THREE.MathUtils.lerp(this.torso.position.y, targetTorsoY, 10 * dt);
     this.muzzleFlash.intensity = THREE.MathUtils.lerp(this.muzzleFlash.intensity, 0, 25 * dt);
